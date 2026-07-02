@@ -1,16 +1,15 @@
 {
-  "name": "maruchan-bot",
-  "version": "1.1.0",
-  "description": "Bot de WhatsApp sin publicidad",
-  "main": "index.js",
+  "name": "Mochi",
+  "version": "1.0.0",
+  "description": "Bot de WhatsApp usando Baileys",
+  "main": "src/index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node src/index.js"
   },
   "dependencies": {
     "@whiskeysockets/baileys": "^6.6.0",
-    "mongoose": "^8.0.0",
     "qrcode-terminal": "^0.12.0",
-    "pino": "^8.0.0",
-    "chalk": "^4.1.2"
-  }
+    "pino": "^9.0.0"
+  },
+  "type": "commonjs"
 }
