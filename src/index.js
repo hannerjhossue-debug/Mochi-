@@ -1,54 +1,51 @@
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
-const QRCode = require('qrcode-terminal');
 const pino = require('pino');
+const readline = require('readline');
+
+const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+const question = (text) => new Promise((resolve) => rl.question(text, resolve));
 
 async function connectToWhatsApp() {
-    // Gestiona las credenciales de la sesión
     const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys');
 
-    // Inicializa el bot
     const sock = makeWASocket({
         auth: state,
-        logger: pino({ level: 'silent' }) // Oculta logs innecesarios
+        logger: pino({ level: 'silent' }),
+        browser: ["Ubuntu", "Chrome", "20.0.04"]
     });
 
-    // Escucha las actualizaciones de la conexión
+    // SISTEMA DE VINCULACIÓN POR CÓDIGO (SIN QR)
+    if (!sock.authState.creds.registered) {
+        setTimeout(async () => {
+            const phoneNumber = await question('Introduce tu número de WhatsApp con código de país (Ej: 54911xxxxxxx o 346xxxxxx):\n> ');
+            const code = await sock.requestPairingCode(phoneNumber.replace(/[^0-9]/g, ''));
+            console.log(`\n🔑 TU CÓDIGO DE VINCULACIÓN ES: ${code}\n`);
+            console.log('Ve a WhatsApp > Dispositivos vinculados > Vincular con el número de teléfono e ingresa ese código.');
+        }, 3000);
+    }
+
     sock.ev.on('connection.update', (update) => {
-        const { connection, lastDisconnect, qr } = update;
-
-        if (qr) {
-            console.log('--- ESCANEA EL SIGUIENTE CÓDIGO QR CON TU WHATSAPP ---');
-            QRCode.generate(qr, { small: true });
-        }
-
+        const { connection, lastDisconnect } = update;
         if (connection === 'close') {
             const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
-            console.log('Conexión cerrada debido a:', lastDisconnect?.error, '. Reconectando:', shouldReconnect);
-            if (shouldReconnect) {
-                connectToWhatsApp();
-            }
+            if (shouldReconnect) connectToWhatsApp();
         } else if (connection === 'open') {
-            console.log('¡Bot conectado exitosamente a WhatsApp!');
+            console.log('¡Bot conectado exitosamente con código!');
         }
     });
 
-    // Guarda las credenciales cada vez que se actualizan
     sock.ev.on('creds.update', saveCreds);
 
-    // Escucha los mensajes entrantes
     sock.ev.on('messages.upsert', async (m) => {
         const msg = m.messages[0];
-        if (!msg.message || msg.key.fromMe) return; // Ignora mensajes propios o vacíos
-
+        if (!msg.message || msg.key.fromMe) return;
         const from = msg.key.remoteJid;
         const text = msg.message.conversation || msg.message.extendedTextMessage?.text;
 
-        // Comando básico de prueba
         if (text === '!ping') {
-            await sock.sendMessage(from, { text: '¡Pong! 🏓 El bot está activo.' });
+            await sock.sendMessage(from, { text: '¡Pong! 🏓 Funcionando desde código de vinculación.' });
         }
     });
 }
 
-// Iniciar el bot
 connectToWhatsApp();
