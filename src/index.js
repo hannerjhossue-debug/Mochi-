@@ -9,7 +9,6 @@ async function connectToWhatsApp() {
     // Inicializa el bot
     const sock = makeWASocket({
         auth: state,
-        printQRInTerminal: true, // Esto muestra el QR en Termux
         logger: pino({ level: 'silent' }) // Oculta logs innecesarios
     });
 
